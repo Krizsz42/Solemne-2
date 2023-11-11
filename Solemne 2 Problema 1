@@ -1,0 +1,256 @@
+# Inicializar variables para almacenar información del curso
+nombre_curso = input("Ingrese el nombre del curso: ")
+
+# Solicitar al usuario la cantidad de alumnos en el curso
+cantidad_alumnos = int(input("Ingrese la cantidad de alumnos en su curso: "))
+
+# Crear una lista vacía para almacenar la información de los alumnos
+alumnos = []
+
+# Solicitar la cantidad de evaluaciones una sola vez
+evaluaciones = int(input("Ingrese la cantidad de evaluaciones: "))
+ponderaciones = []
+
+for j in range(evaluaciones):
+    nombre_evaluacion = input(f"Ingrese el nombre de la evaluación {j + 1}: ")
+    ponderacion = float(input(f"Ingrese el porcentaje de ponderación para {nombre_evaluacion} (0-100%): "))
+
+    # Asegurarse de que la ponderación esté en el rango correcto (0-100%)
+    if 0 <= ponderacion <= 100:
+        ponderaciones.append((nombre_evaluacion, ponderacion))
+    else:
+        print("La ponderación debe estar en el rango de 0-100%. Por favor, ingrese un valor válido.")
+        exit(1)
+
+# Solicitar si el curso tiene examen
+tiene_examen_input = input("¿El curso tiene examen? (s/n): ").lower()
+if tiene_examen_input == "s":
+    nombre_examen = input("Ingrese el nombre del examen: ")
+    ponderacion_examen = float(input("Ingrese el porcentaje de ponderación para el examen (0-100%): "))
+
+    # Asegurarse de que la ponderación del examen esté en el rango correcto (0-100%)
+    if 0 <= ponderacion_examen <= 100:
+        ponderaciones.append((nombre_examen, ponderacion_examen))
+    else:
+        print("La ponderación del examen debe estar en el rango de 0-100%. Por favor, ingrese un valor válido.")
+        exit(1)
+
+# Solicitar si el curso es teórico o práctico (t = teórico, p = práctico)
+tipo_curso_input = input("¿El curso es teórico (t) o práctico (p)?: ").lower()
+
+if tipo_curso_input == "t":
+    tipo_curso = "teórico"
+    porcentaje_asistencia_requerido = 0.60  # 60% de asistencia requerido para aprobar
+elif tipo_curso_input == "p":
+    tipo_curso = "práctico"
+    porcentaje_asistencia_requerido = 0.80  # 80% de asistencia requerido para aprobar
+else:
+    print("Opción no válida. Se asumirá teórico por defecto.")
+    tipo_curso = "teórico"
+    porcentaje_asistencia_requerido = 0.60
+
+# Solicitar información de los alumnos
+for i in range(cantidad_alumnos):
+    nombre_alumno = input(f"Ingrese el nombre del alumno {i + 1}:")
+
+    alumno = {
+        "Nombre": nombre_alumno,
+        "Evaluaciones": evaluaciones,
+        "Ponderaciones": ponderaciones,
+        "Tiene Examen": tiene_examen_input == "s",
+        "Tipo Examen": "práctico" if tiene_examen_input == "s" else "",
+        "Tipo Curso": tipo_curso,  # Usar la misma opción para todos los estudiantes
+        "Notas": [],
+        "Asistencia": 0.0,
+        "Porcentaje Asistencia Requerido": porcentaje_asistencia_requerido,  # Usar la misma opción para todos los estudiantes
+    }
+    alumnos.append(alumno)
+
+# Función para calcular la nota final de un alumno
+def calcular_nota_final(notas, ponderaciones):
+    suma_notas_ponderadas = sum(nota * ponderacion for (nombre_evaluacion, nota), (nombre_evaluacion, ponderacion) in zip(notas, ponderaciones))
+    suma_ponderaciones = sum(ponderacion for (_, ponderacion) in ponderaciones)
+    nota_final = suma_notas_ponderadas / suma_ponderaciones
+    return nota_final
+
+# Función para determinar si un alumno aprobó o reprobó
+def determinar_aprobacion(alumno):
+    nota_final = calcular_nota_final(alumno["Notas"], alumno["Ponderaciones"])
+    asistencia = alumno["Asistencia"]
+    porcentaje_asistencia_requerido = alumno["Porcentaje Asistencia Requerido"]
+    tipo_examen = alumno["Tipo Examen"]
+    razon_reprobado = ""
+
+    if tipo_examen == "práctico":
+        if nota_final >= 4.0 and asistencia >= porcentaje_asistencia_requerido:
+            resultado = "Aprobado"
+        else:
+            resultado = "Reprobado"
+            if nota_final < 4.0:
+                razon_reprobado = "Nota insuficiente"
+            if asistencia < porcentaje_asistencia_requerido:
+                if razon_reprobado:
+                    razon_reprobado += " y asistencia insuficiente"
+                else:
+                    razon_reprobado = "Asistencia insuficiente"
+    else:
+        if nota_final >= 4.0 and asistencia >= porcentaje_asistencia_requerido:
+            resultado = "Aprobado"
+        else:
+            resultado = "Reprobado"
+            if nota_final < 4.0:
+                razon_reprobado = "Nota insuficiente"
+            if asistencia < porcentaje_asistencia_requerido:
+                if razon_reprobado:
+                    razon_reprobado += " y asistencia insuficiente"
+                else:
+                    razon_reprobado = "Asistencia insuficiente"
+
+    return resultado, razon_reprobado
+
+# Función para agregar notas a las evaluaciones de un alumno
+def agregar_notas_a_evaluaciones(alumno):
+    for nombre_evaluacion, ponderacion in alumno["Ponderaciones"]:
+        if "Examen" not in nombre_evaluacion:
+            if nombre_evaluacion not in [nombre for nombre, _ in alumno["Notas"]]:
+                nota = float(input(f"Ingrese la nota obtenida en la evaluación '{nombre_evaluacion}': "))
+                if 1.0 <= nota <= 7.0:
+                    alumno["Notas"].append((nombre_evaluacion, nota))
+                else:
+                    print("La nota debe estar en el rango de 1.0 a 7.0.")
+            else:
+                print(f"Ya existe una nota para la evaluación '{nombre_evaluacion}'.")
+        else:
+            if alumno["Tiene Examen"]:
+                nombre_examen = alumno["Tipo Examen"]
+                print(f"Ingrese la nota obtenida en la evaluación '{nombre_evaluacion}' (Examen - {nombre_examen}): ")
+                respuesta = input("¿Desea ingresar la nota? (s/n): ")
+                if respuesta.lower() == "s":
+                    agregar_nota_examen(alumno)
+                else:
+                    print("No se ingresará la nota del examen.")
+            else:
+                print("El alumno no tiene examen.")
+                break
+
+# Función para cambiar una nota de un alumno para las evaluaciones
+def cambiar_nota_evaluacion(alumno):
+    nombre_evaluacion = input("Ingrese el nombre de la evaluación que desea cambiar: ")
+
+    # Verificar si la evaluación existe en las ponderaciones del alumno
+    if nombre_evaluacion not in [nombre for nombre, _ in alumno["Ponderaciones"]]:
+        print(f"La evaluación '{nombre_evaluacion}' no existe. Intente nuevamente.")
+        return
+
+    # Verificar si existe una nota para esta evaluación
+    for i, (nombre, nota) in enumerate(alumno["Notas"]):
+        if nombre == nombre_evaluacion:
+            print(f"La nota actual para la evaluación '{nombre_evaluacion}' es: {nota:.1f}")
+            nueva_nota = float(input("Ingrese la nueva nota: "))
+            if 1.0 <= nueva_nota <= 7.0:
+                alumno["Notas"][i] = (nombre_evaluacion, nueva_nota)
+                print(f"Nota actualizada para la evaluación '{nombre_evaluacion}'.")
+                return
+            else:
+                print("La nota debe estar en el rango de 1.0 a 7.0.")
+                return
+
+    print(f"No se encontró una nota para la evaluación '{nombre_evaluacion}'.")
+
+# Función para agregar una nota al examen
+def agregar_nota_examen(alumno):
+    nombre_examen = alumno["Tipo Examen"]
+    if not nombre_examen:
+        print("El alumno no tiene examen.")
+        return
+
+# Verificar si ya existe una nota para el examen
+    if nombre_examen in [nombre for nombre, _ in alumno["Notas"]]:
+        print(f"Ya existe una nota para el examen {nombre_examen}.")
+        return
+
+# Ingresar la nota para el examen
+    nota = float(input(f"Ingrese la nota obtenida en el examen {nombre_examen}: "))
+    if 1.0 <= nota <= 7.0:
+        alumno["Notas"].append((nombre_examen, nota))
+    else:
+        print("La nota debe estar en el rango de 1.0 a 7.0.")
+
+# Función para agregar el porcentaje de asistencia a un alumno
+def agregar_asistencia(alumno):
+    while True:
+        asistencia = float(input("Ingrese el porcentaje de asistencia (en porcentaje): "))
+        if asistencia <= 100.0:
+            alumno["Asistencia"] = asistencia / 100.0
+            break
+        else:
+            print("El porcentaje de asistencia no puede ser mayor a 100. Por favor, ingréselo nuevamente.")
+
+# Resumen general del curso
+def resumen_curso():
+    for alumno in alumnos:
+        resultado, razon_reprobado = determinar_aprobacion(alumno)
+        nota_final = calcular_nota_final(alumno["Notas"], alumno["Ponderaciones"])
+        asistencia = alumno["Asistencia"]
+        print(f"Resumen para {alumno['Nombre']}:")
+        print(f"Nota final: {nota_final:.2f}")
+        print(f"Asistencia: {asistencia * 100:.2f}%")
+        print(f"Resultado: {resultado}")
+        if razon_reprobado:
+            print(f"Razón de reprobación: {razon_reprobado}")
+# Menú principal
+while True:
+    print("\nMenú:")
+    print("1. Agregar notas a las evaluaciones")
+    print("2. Cambiar una nota de evaluación")
+    print("3. Agregar porcentaje de asistencia")
+    print("4. Resumen general de un alumno")
+    print("5. Resumen general del curso")
+    print("6. Salir")
+    opcion = input("Seleccione una opción (1/2/3/4/5/6): ")
+    if opcion == "1":
+        alumno = input("Ingrese el nombre del alumno al que desea agregar notas a las evaluaciones: ")
+        for a in alumnos:
+            if a["Nombre"] == alumno:
+                agregar_notas_a_evaluaciones(a)  # Llamar a la función para agregar notas a las evaluaciones
+                break
+        else:
+            print(f"No se encontró al alumno {alumno}.")
+    elif opcion == "2":
+        alumno = input("Ingrese el nombre del alumno al que desea cambiar una nota: ")
+        for a in alumnos:
+            if a["Nombre"] == alumno:
+                cambiar_nota_evaluacion(a)  # Llamar a la función para cambiar una nota
+                break
+        else:
+            print(f"No se encontró al alumno {alumno}.")
+    elif opcion == "3":
+        alumno = input("Ingrese el nombre del alumno al que desea agregar el porcentaje de asistencia: ")
+        for a in alumnos:
+            if a["Nombre"] == alumno:
+                agregar_asistencia(a)
+                break
+        else:
+            print(f"No se encontró al alumno {alumno}.")
+    elif opcion == "4":
+        alumno = input("Ingrese el nombre del alumno del que desea ver el resumen: ")
+        for a in alumnos:
+            if a["Nombre"] == alumno:
+                resultado, razon_reprobado = determinar_aprobacion(a)
+                nota_final = calcular_nota_final(a["Notas"], a["Ponderaciones"])
+                asistencia = a["Asistencia"]
+                print(f"Resumen para {a['Nombre']}:")
+                print(f"Nota final: {nota_final:.2f}")
+                print(f"Asistencia: {asistencia * 100:.2f}%")
+                print(f"Resultado: {resultado}")
+                if razon_reprobado:
+                    print(f"Razón de reprobación: {razon_reprobado}")
+                break
+        else:
+            print(f"No se encontró al alumno {alumno}.")
+    elif opcion == "5":
+        resumen_curso()
+    elif opcion == "6":
+        break
+    else:
+        print("Opción no válida. Por favor, seleccione una opción válida.")
